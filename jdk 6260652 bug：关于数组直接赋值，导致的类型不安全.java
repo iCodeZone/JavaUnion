@@ -3,7 +3,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 
 class BaseClass {
@@ -37,6 +36,9 @@ public class BugTest {
     //不安全的情况
     @Test
     public void test2() {
+        // 此处的list的类型是Arrays$ArrayList类型(Arrays的私有类ArrayList)
+        // 需要注意到的是Arrays中的ArrayList的底层实现是泛型数组
+        // 故以下都是String数组类型
         List<String> list = Arrays.asList("abc");
 
         // class java.util.Arrays$ArrayList
@@ -52,12 +54,13 @@ public class BugTest {
     // 安全的情况
     @Test
     public void test3() {
-        List<String> dataList = new ArrayList<>();
-        dataList.add("one");
-        dataList.add("two");
-        System.out.println(dataList.getClass());
+        // 此处的list的实际类型是ArrayList类型，而ArrayList的底层实现是Object数组
+        List<String> list = new ArrayList<>();
+        list.add("one");
+        list.add("two");
+        System.out.println(list.getClass());
 
-        Object[] listToArray = dataList.toArray();
+        Object[] listToArray = list.toArray();
 
         // class [Ljava.lang.Object;返回的是Object数组
         System.out.println(listToArray.getClass());// Object数组
