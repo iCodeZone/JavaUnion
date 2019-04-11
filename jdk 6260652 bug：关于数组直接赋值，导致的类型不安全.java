@@ -3,6 +3,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 
 class BaseClass {
@@ -54,6 +55,7 @@ public class BugTest {
         List<String> dataList = new ArrayList<>();
         dataList.add("one");
         dataList.add("two");
+        System.out.println(dataList.getClass());
 
         Object[] listToArray = dataList.toArray();
 
