@@ -525,16 +525,21 @@ HashMap底层是基于拉链式散列算法实现。在JDK1.8中引入了红黑�
             resize();
         else if ((e = tab[index = (n - 1) & hash]) != null) {
             TreeNode<K, V> hd = null, tl = null;
+            // 转化为树节点的双向链表
             do {
+                // 将节点替换为TreeNode
                 TreeNode<K, V> p = replacementTreeNode(e, null);
+                // 记录头节点
                 if (tl == null)
                     hd = p;
+                // 这里其实是将单链表转化成了双向链表
                 else {
                     p.prev = tl;
                     tl.next = p;
                 }
                 tl = p;
             } while ((e = e.next) != null);
+            // 将链表进行树化
             if ((tab[index] = hd) != null)
                 hd.treeify(tab);
         }
@@ -1654,47 +1659,36 @@ HashMap底层是基于拉链式散列算法实现。在JDK1.8中引入了红黑�
         }
  
         /**
-         * Tie-breaking utility for ordering insertions when equal
-         * hashCodes and non-comparable. We don't require a total
-         * order, just a consistent insertion rule to maintain
-         * equivalence across rebalancings. Tie-breaking further than
-         * necessary simplifies testing a bit.
-         */
-        static int tieBreakOrder(Object a, Object b) {
-            int d;
-            if (a == null || b == null ||
-                    (d = a.getClass().getName().
-                            compareTo(b.getClass().getName())) == 0)
-                d = (System.identityHashCode(a) <= System.identityHashCode(b) ?
-                        -1 : 1);
-            return d;
-        }
- 
-        /**
-         * Forms tree of the nodes linked from this node.
-         *从这个节点链接的节点的表单树
-         * @return root of tree
+         * 树化这个双向链表
          */
         final void treeify(Node<K, V>[] tab) {
             TreeNode<K, V> root = null;
             for (TreeNode<K, V> x = this, next; x != null; x = next) {
                 next = (TreeNode<K, V>) x.next;
                 x.left = x.right = null;
+                // 初始化根节点
                 if (root == null) {
                     x.parent = null;
+                    // 根节点为黑色
                     x.red = false;
                     root = x;
                 } else {
                     K k = x.key;
                     int h = x.hash;
                     Class<?> kc = null;
+                    // 循环遍历，进行二叉搜索树的插入
                     for (TreeNode<K, V> p = root; ; ) {
+                        // dir用来指示x节点与p的比较，-1表示比p小，1表示比p大，
+                        // 不存在相等情况，因为HashMap中是不存在两个key完全一致的情况。
                         int dir, ph;
                         K pk = p.key;
                         if ((ph = p.hash) > h)
                             dir = -1;
                         else if (ph < h)
                             dir = 1;
+                        // 如果hash值相等，那么判断k是否实现了comparable接口，
+                        // 如果实现了comparable接口就使用compareTo进行进行比较，
+                        // 如果仍旧相等或者没有实现comparable接口，则在tieBreakOrder中比较
                         else if ((kc == null &&
                                 (kc = comparableClassFor(k)) == null) ||
                                 (dir = compareComparables(kc, k, pk)) == 0)
@@ -1707,14 +1701,29 @@ HashMap底层是基于拉链式散列算法实现。在JDK1.8中引入了红黑�
                                 xp.left = x;
                             else
                                 xp.right = x;
+                            // 进行插入平衡处理
                             root = balanceInsertion(root, x);
                             break;
                         }
                     }
                 }
             }
+            // 将根节点设为链表的首节点
             moveRootToFront(tab, root);
         }
+
+        // 在插入中保持一致的顺序
+        static int tieBreakOrder(Object a, Object b) {
+            int d;
+            // 用两者的类名进行比较，如果相同则使用对象默认的hashcode（引用）进行比较
+            if (a == null || b == null ||
+                    (d = a.getClass().getName().
+                            compareTo(b.getClass().getName())) == 0)
+                d = (System.identityHashCode(a) <= System.identityHashCode(b) ?
+                        -1 : 1);
+            return d;
+        }
+
  
         /**
          * Returns a list of non-TreeNodes replacing those linked from
@@ -1953,9 +1962,8 @@ HashMap底层是基于拉链式散列算法实现。在JDK1.8中引入了红黑�
         }
  
         /* ------------------------------------------------------------ */
-        // Red-black tree methods, all adapted from CLR
-        // 红黑树方法，都是由CLR改编的
- 
+
+        // 左旋
         static <K, V> TreeNode<K, V> rotateLeft(TreeNode<K, V> root,
                                                 TreeNode<K, V> p) {
             TreeNode<K, V> r, pp, rl;
@@ -1973,7 +1981,8 @@ HashMap底层是基于拉链式散列算法实现。在JDK1.8中引入了红黑�
             }
             return root;
         }
- 
+
+        // 右旋
         static <K, V> TreeNode<K, V> rotateRight(TreeNode<K, V> root,
                                                  TreeNode<K, V> p) {
             TreeNode<K, V> l, pp, lr;
