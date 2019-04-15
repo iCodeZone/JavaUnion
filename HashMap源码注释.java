@@ -28,7 +28,7 @@ import java.util.function.Function;
  *   这通常通过同步自然封装映射的某个对象来完成。如果不存在此类对象，则应使用该Collections.synchronizedMap 方法“包装”地图 
  *   Map m = Collections.synchronizedMap（new HashMap（...））;
  * 6、所有这个类的“集合视图方法”返回的迭代器都是快速失败的：如果在创建迭代器之后的任何时候对映射进行结构修改，
- *   除了通过迭代器自己的 remove方法之外，迭代器将抛出一个 ConcurrentModificationException。
+ *   除了通过迭代器自己的remove方法之外，迭代器将抛出一个 ConcurrentModificationException。
  *   因此，面对并发修改，迭代器快速而干净地失败，而不是在将来某个未确定的时间冒着任意的，非确定性的行为风险。
  * 7、请注意，迭代器的故障快速行为无法得到保证，因为一般来说，在存在非同步并发修改的情况下不可能做出任何硬性保证。
  *   失败快速迭代器会尽最大努力抛出ConcurrentModificationException。
@@ -40,23 +40,23 @@ class HashMap<K, V> extends AbstractMap<K, V>
     private static final long serialVersionUID = 362498820763181265L;
  
 /*
-HashMap 底层是基于散列算法实现，散列算法分为散列再探测和拉链式。HashMap 则使用了拉链式的散列算法，并在 JDK 1.8 中引入了红黑树优化过长的链表
+HashMap底层是基于拉链式散列算法实现。在JDK1.8中引入了红黑树优化过长的链表
     实现注意事项。
     链表结构（这里叫 bin ，箱子）
-    Map通常充当一个binned（桶）的哈希表，但是当箱子变得太大时，它们就会被转换成TreeNodes的箱子，每个箱子的结构都类似于java.util.TreeMap。
-    大多数方法都尝试使用普通的垃圾箱，但是在适用的情况下（只要检查一个节点的实例）就可以传递到TreeNode方法。
-    可以像其他的一样遍历和使用TreeNodes，但是在过度填充的时候支持更快的查找
-    然而，由于大多数正常使用的箱子没有过多的填充，所以在表方法的过程中，检查树箱的存在可能会被延迟。
-    树箱(bins即所有的元素都是TreeNodes）主要是由hashCode来排序的，但是在特定的情况下，
-    如果两个元素是相同的“实现了Comparable接口”，那么使用它们的比较方法排序。
-    （我们通过反射来保守地检查泛型类型，以验证这一点——参见方法comparableClassFor）。
-    使用树带来的额外复杂，是非常有价值的，因为能提供了最坏只有O(log n)的时间复杂度当键有不同的散列或可排序。
-    因此,性能降低优雅地在意外或恶意使用hashCode()返回值的分布很差,以及许多key共享一个hashCode,只要他们是可比较的。
-    （如果这两种方法都不适用，同时不采取任何预防措施，我们可能会在时间和空间上浪费大约两倍的时间。
-    但是，唯一已知的案例源于糟糕的用户编程实践，这些实践已经非常缓慢，这几乎没有什么区别。）
-    因为TreeNodes大小大约是普通节点的两倍，所以只有当容器包含足够的节点来保证使用时才使用它们（见treeifythreshold）。
-    当它们变得太小（由于移除或调整大小），它们就会被转换回普通bins。
-    在使用良好的用户hashcode的用法中，很少使用树箱。
+    1、Map通常充当一个binned（桶）的哈希表，但是当箱子变得太大时，它们就会被转换成TreeNodes的箱子，每个箱子的结构都类似于java.util.TreeMap。
+    2、大多数方法都尝试使用普通的垃圾箱，但是在适用的情况下（只要检查一个节点的实例）就可以传递到TreeNode方法。
+      可以像其他的一样遍历和使用TreeNodes，但是在过度填充的时候支持更快的查找
+    3、然而，由于大多数正常使用的箱子没有过多的填充，所以在表方法的过程中，检查树箱的存在可能会被延迟。
+    4、树箱(bins即所有的元素都是TreeNodes）主要是由hashCode来排序的，但是在特定的情况下，
+      如果两个元素是相同的“实现了Comparable接口”，那么使用它们的比较方法排序。
+      （我们通过反射来保守地检查泛型类型，以验证这一点——参见方法comparableClassFor）。
+    5、使用树带来的额外复杂，是非常有价值的，因为能提供了最坏只有O(log n)的时间复杂度当键有不同的散列或可排序。
+      因此,性能降低优雅地在意外或恶意使用hashCode()返回值的分布很差,以及许多key共享一个hashCode,只要他们是可比较的。
+      （如果这两种方法都不适用，同时不采取任何预防措施，我们可能会在时间和空间上浪费大约两倍的时间。
+      但是，唯一已知的案例源于糟糕的用户编程实践，这些实践已经非常缓慢，这几乎没有什么区别。）
+    6、因为TreeNodes大小大约是普通节点的两倍，所以只有当容器包含足够的节点来保证使用时才使用它们（见treeifythreshold）。
+      当它们变得太小（由于移除或调整大小），它们就会被转换回普通bins。
+      在使用良好的用户hashcode的用法中，很少使用树箱。
     理想情况下，在随机的hashcode中，箱子中节点的频率遵循泊松分布（http://en.wikipedia.org/wiki/Poisson_distribution），
     默认大小调整阈值为0.75，但由于调整粒度的大小有很大的差异。
     忽略方差，list的长度 k=(exp(-0.5) * pow(0.5, k) / factorial(k))
@@ -85,20 +85,20 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
 */
  
  
-      /*
-       默认的初始容量——必须是2的幂。
-       */
+    /**
+     * 默认的初始容量——必须是2的幂。
+     */
     static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
  
     /**
      * 最大容量，如果一个更高的值被隐式指定
      * 任何一个有参数的构造函数。
-     * 必须是 2 <= 1<<30 的幂。
+     * 必须是 2的幂 <= 1<<30 。
      */
     static final int MAXIMUM_CAPACITY = 1 << 30;
  
     /**
-     * 在构造函数中没有指定的负载因素。
+     * 默认负载因子
      */
     static final float DEFAULT_LOAD_FACTOR = 0.75f;
  
@@ -121,7 +121,7 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     static final int MIN_TREEIFY_CAPACITY = 64;
  
     /**
-     基本的哈希bin节点，用于大多数条目。（请参阅下面的TreeNode子类，以及LinkedHashMap的子类。）
+     基本的哈希bin节点，用于大多数条目。
      首先 HashMap 内部的结构，它可以看作是数组（Node[] table）和链表结合组成的复合结构，数组被分为一个个桶（bucket），
      通过哈希值决定了键值对在这个数组的寻址；哈希值相同的键值对，则以链表形式存储，
      如果链表大小超过阈值（TREEIFY_THRESHOLD, 8），图中的链表就会被改造为树形结构。
@@ -177,31 +177,16 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     /* ---------------- 静态的公用工具 -------------- */
  
     /**
-     Computes key.hashCode() and spreads (XORs) higher bits of hash to lower.
-     计算key.hashCode（）和利差（XORs）较高的散列值。
-     Because the table uses power-of-two masking, sets of hashes that vary only in bits above the current mask will always collide.
-     因为这个表使用了两个功能的屏蔽，所以只有在当前掩模上方的位上变化的哈希表总是会发生碰撞。
-     (Among known examples are sets of Float keys holding consecutive whole numbers in small tables.)
-     （在已知的例子中，有一组浮动键在小表中连续保持整数。）
-     So we apply a transform that spreads the impact of higher bits downward.
-     所以我们应用了一个变换，将更高位的影响向下传播。
-     There is a tradeoff between speed, utility, and quality of bit-spreading.
-     在速度、效用和比特传播的质量之间存在权衡。
-     Because many common sets of hashes are already reasonably distributed (so don't benefit from spreading),
-     and because we use trees to handle large sets of collisions in bins,
-     we just XOR some shifted bits in the cheapest possible way to reduce systematic lossage,
-     as well as to incorporate impact of the highest bits that would otherwise never be used in index calculations because of table bounds.
-     因为许多常见的散列集已经合理分布(所以不要受益于传播),因为我们用树来处理大型的碰撞在垃圾箱,我们只是XOR一些改变以最便宜的方式来减少系统lossage,以及将最高位的影响,否则永远不会因为指数计算中使用的表。
+     * 高位和低位相异或
+     * 不忽略高位，减少hash碰撞
      */
     static final int hash(Object key) {
         int h;
-        //因为有些数据计算出的哈希值差异主要在高位，而 HashMap 里的哈希寻址是忽略容量以上的高位的，那么这种处理就可以有效避免类似情况下的哈希碰撞。
         return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
     }
  
     /**
-     Returns x's Class if it is of the form "class C implements Comparable<C>", else null.
-     返回x的类如果它是“class C implements Comparable<C>"”，则为null。
+     * 反射：对象x是否实现了Comparable接口
      */
     static Class<?> comparableClassFor(Object x) {
         if (x instanceof Comparable) {
@@ -226,8 +211,7 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     Returns k.compareTo(x) if x matches kc (k's screened comparable class), else 0.
-     如果x匹配kc（k的屏幕可比类），则返回k.compareto（x），否则为0。
+     * 如果x匹配kc（k的可比类），则返回k.compareto（x），否则为0。
      */
     @SuppressWarnings({"rawtypes", "unchecked"}) // for cast to Comparable
     static int compareComparables(Class<?> kc, Object k, Object x) {
@@ -236,9 +220,7 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     Returns a power of two size for the given target capacity.
-     为给定的目标容量返回一个大于等于他的最小的2的指数值
-     如给定1->1，3->4 ,4->4 ,5->8 ,9->16,17->32,33->64
+     * 返回一个大于等于他的最小的2的指数值
      */
     static final int tableSizeFor(int cap) {
         int n = cap - 1;
@@ -250,23 +232,13 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
         return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
     }
  
-    /* ---------------- Fields -------------- */
- 
     /**
-     The table, initialized on first use, and resized as necessary.
-     表在第一次使用时初始化，并在必要时进行调整。
-     When allocated, length is always a power of two.
-     当分配时，长度总是2的幂。
-     (We also tolerate length zero in some operations to allow bootstrapping mechanics that are currently not needed.)
-     （我们还可以容忍某些操作的长度为0，以允许目前不需要的引导机制。）
+     * 存数数据
      */
     transient Node<K, V>[] table;
  
     /**
-     Holds cached entrySet().
-     保存缓存entrySet()。
-     Note that AbstractMap fields are used for keySet() and values().
-     请注意，AbstractMap字段用于keySet（）和values（）。
+     * 保存缓存entrySet()。
      */
     transient Set<Map.Entry<K, V>> entrySet;
  
@@ -276,45 +248,22 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     transient int size;
  
     /**
-     The number of times this HashMap has been structurally modified Structural modifications are those that change the number of mappings in the HashMap or otherwise modify its internal structure (e.g., rehash).
-     这个HashMap经过结构修改的结构修改的次数，是那些改变HashMap中的映射数量或修改其内部结构（例如，rehash）的修改。
-     This field is used to make iterators on Collection-views of the HashMap fail-fast.
-     这个字段用于在HashMap故障快速的集合视图上创建迭代器。
-     (See ConcurrentModificationException).
-     (见ConcurrentModificationException)。
+     * 记录这个HashMap经过结构修改的次数，是那些改变HashMap中的映射数量或修改其内部结构（例如，rehash）的修改。
      */
     transient int modCount;
  
     /**
-     * The next size value at which to resize (capacity * load factor).
-     下一个大小的值，可以调整大小（容量负载系数）。
-     * @serial
+     * 阈值：一般为 capacity*loadFactory
      */
-  /* (The javadoc description is true upon serialization.
-      （javadoc描述在序列化时是正确的。
-    Additionally, if the table array has not been allocated, this field holds the initial array capacity, or zero signifying DEFAULT_INITIAL_CAPACITY.)
-    此外，如果表阵列没有被分配，这个字段保留初始数组容量，或者表示默认值。）*/
     int threshold;
  
     /**
-     The load factor for the hash table.
-     哈希表的负载因素。
-     *
-     * @serial
+     * 负载因子
      */
     final float loadFactor;
  
-    /* ---------------- Public operations 公共业务-------------- */
- 
     /**
-     * Constructs an empty <tt>HashMap</tt> with the specified initial
-     * capacity and load factor.
      * 使用指定的初始化容量和负载因子构建一个空的HashMap
-     *
-     * @param initialCapacity the initial capacity
-     * @param loadFactor      the load factor
-     * @throws IllegalArgumentException if the initial capacity is negative or the load factor is nonpositive
-    如果初始容量是负的或者负载因素是非正的
      */
     public HashMap(int initialCapacity, float loadFactor) {
         if (initialCapacity < 0)
@@ -330,20 +279,13 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Constructs an empty <tt>HashMap</tt> with the specified initial
-     * capacity and the default load factor (0.75).
      * 使用指定的初始化容量和默认0.75负载因子构建一个空的HashMap
-     *
-     * @param initialCapacity the initial capacity.
-     * @throws IllegalArgumentException if the initial capacity is negative.
      */
     public HashMap(int initialCapacity) {
         this(initialCapacity, DEFAULT_LOAD_FACTOR);
     }
  
     /**
-     * Constructs an empty <tt>HashMap</tt> with the default initial capacity
-     * (16) and the default load factor (0.75).
      * 使用指定的初始化容量16和默认0.75负载因子构建一个空的HashMap
      */
     public HashMap() {
@@ -351,28 +293,14 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Constructs a new <tt>HashMap</tt> with the same mappings as the specified <tt>Map</tt>.
-     构造一个新的“HashMap”，它的映射与指定的“Map”映射相同。
-     The <tt>HashMap</tt> is created with default load factor (0.75) and an initial capacity sufficient to hold the mappings in the specified <tt>Map</tt>.
-     HashMap是用默认的load因子（0.75）和初始容量来创建的，它足以容纳指定的映射表中的映射。
-     *
-     * @param m the map whose mappings are to be placed in this map
-     *          映射的映射将被放置在这个Map
-     * @throws NullPointerException if the specified map is null
+     * 构造一个新的“HashMap”，它的映射与指定的“Map”映射相同。
+     * HashMap是用默认的load因子（0.75）和初始容量来创建的，它足以容纳指定的映射表中的映射。
      */
     public HashMap(Map<? extends K, ? extends V> m) {
         this.loadFactor = DEFAULT_LOAD_FACTOR;
         putMapEntries(m, false);
     }
  
-    /**
-     * Implements Map.putAll and Map constructor
-     *
-     * @param m     the map
-     * @param evict false when initially constructing this map, else
-     *              true (relayed to method afterNodeInsertion).
-     *              当初始化false，否则true（在节点插入后传送到方法）
-     */
     final void putMapEntries(Map<? extends K, ? extends V> m, boolean evict) {
         int s = m.size();
         if (s > 0) {
@@ -393,54 +321,29 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Returns the number of key-value mappings in this map.
      * 返回此Map中键值映射的数量。
-     *
-     * @return the number of key-value mappings in this map
      */
     public int size() {
         return size;
     }
  
     /**
-     * Returns <tt>true</tt> if this map contains no key-value mappings.
-     * @return <tt>true</tt> if this map contains no key-value mappings
+     * 判空
      */
     public boolean isEmpty() {
         return size == 0;
     }
  
     /**
-     Returns the value to which the specified key is mapped, or {@code null} if this map contains no mapping for the key.
-     返回指定键被映射的值，如果该映射不包含钥匙的映射，则返回@code null。
-     More formally, if this map contains a mapping from a key {@code k} to a value {@code v} such that {@code (key==null ?
-    更正式地说，如果这张地图包含从一个键@code k到一个值@code v的映射，那么@code（key==null？
-    k==null : key.equals(k))}, then this method returns {@code v};
-     k==null：键。equals（k）），然后这个方法返回@code v;
-     otherwise it returns {@code null}.
-     否则它会返回@code null。
-     (There can be at most one such mapping.)
-     （最多可以有这样的映射。）
-     A return value of {@code null} does not <i>necessarily</i> indicate that the map contains no mapping for the key;
-     @code null的返回值并不一定表明map不包含钥匙的映射;
-     it's also possible that the map explicitly maps the key to {@code null}.
-     也有可能地图显式地将钥匙映射到@code null。
-     The {@link #containsKey containsKey} operation may be used to distinguish these two cases.
-     @link包含密钥的操作可以用来区分这两种情况。
-     * @see #put(Object, Object)
+     * 返回指定键被映射的值，如果该映射不包含钥匙的映射，则返回@code null。
+     * null的返回值并不一定表明map不包含钥匙的映射;
+     * 也有可能地图显式地将钥匙映射到@code null。
      */
     public V get(Object key) {
         Node<K, V> e;
         return (e = getNode(hash(key), key)) == null ? null : e.value;
     }
  
-    /**
-     * Implements Map.get and related methods
-     *实现了地图。获取和相关的方法
-     * @param hash hash for key
-     * @param key  the key
-     * @return the node, or null if none
-     */
     final Node<K, V> getNode(int hash, Object key) {
         Node<K, V>[] tab;
         Node<K, V> first, e;
@@ -465,48 +368,21 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Returns <tt>true</tt> if this map contains a mapping for the
-     * specified key.
-     *
-     * @param key The key whose presence in this map is to be tested
-     * @return <tt>true</tt> if this map contains a mapping for the specified
-     * key.
+     * 是否包含键
      */
     public boolean containsKey(Object key) {
         return getNode(hash(key), key) != null;
     }
  
     /**
-     * Associates the specified value with the specified key in this map.
-     * If the map previously contained a mapping for the key, the old
-     * value is replaced.
      * 添加kv，如果存在key不存在，添加后返回null。如果key已经存在，则value将会覆盖，同时返回之前的值。
-     *
-     * @param key   key with which the specified value is to be associated
-     * @param value value to be associated with the specified key
-     * @return the previous value associated with <tt>key</tt>, or
-     * <tt>null</tt> if there was no mapping for <tt>key</tt>.
-     * (A <tt>null</tt> return can also indicate that the map
-     * previously associated <tt>null</tt> with <tt>key</tt>.)
      */
     public V put(K key, V value) {
-        //内部调用putVal
         return putVal(hash(key), key, value, false, true);
     }
  
     /**
-     * Implements Map.put and related methods
-     * 关键方法！！！
-     *
-     * @param hash         hash for key
-     *                      key调用hash方法，
-     * @param key          the key
-     * @param value        the value to put
-     * @param onlyIfAbsent if true, don't change existing value
-     *                     如果为true则不改变value值，jdk8新增了putIfAbsent，如果不存在则添加。
-     * @param evict        if false, the table is in creation mode.
-     *                      如果false，表处于创建模式，put方法给的是true
-     * @return previous value, or null if none
+     * 添加方法
      */
     final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
                    boolean evict) {
@@ -518,6 +394,7 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
             n = (tab = resize()).length;
         //键值对在哈希表中的位置i = (n - 1) & hash决定
         if ((p = tab[i = (n - 1) & hash]) == null)
+            //桶为空，则初始化根节点
             tab[i] = newNode(hash, key, value, null);
         else {
             Node<K, V> e;
@@ -531,7 +408,8 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
                 for (int binCount = 0; ; ++binCount) {
                     if ((e = p.next) == null) {
                         p.next = newNode(hash, key, value, null);
-                        if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                        // 超过了树化负载因子
+                        if (binCount >= TREEIFY_THRESHOLD - 1) 
                             treeifyBin(tab, hash);
                         break;
                     }
@@ -558,14 +436,9 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     Initializes or doubles table size.
-     初始化或增加表的大小（扩容）。
-     If null, allocates in accord with initial capacity target held in field threshold.
-     如果null，则按照在字段阈值中持有的初始容量目标分配。
-     Otherwise, because we are using power-of-two expansion, the elements from each bin must either stay at same index, or move with a power of two offset in the new table.
-     否则，因为我们使用的是两种扩展的功能，每个箱子中的元素必须保持在相同的索引上，或者在新表中使用两个偏移量。
-     *
-     * @return the table
+     * 初始化或增加表的大小（扩容）。
+     * 如果null，则按照在字段阈值中持有的初始容量目标分配。
+     * 否则，因为我们使用的是两种扩展的功能，每个箱子中的元素必须保持在相同的索引上，或者在新表中使用两个偏移量。
      */
     final Node<K, V>[] resize() {
         Node<K, V>[] oldTab = table;
@@ -641,10 +514,8 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     /**
      * 树化改造
      * bin 的数量大于 TREEIFY_THRESHOLD 时：
-     如果容量小于 MIN_TREEIFY_CAPACITY，只会进行简单的扩容。
-     如果容量大于 MIN_TREEIFY_CAPACITY ，则会进行树化改造。
-     * Replaces all linked nodes in bin at index for given hash unless
-     * table is too small, in which case resizes instead.
+     * 如果容量小于 MIN_TREEIFY_CAPACITY，只会进行简单的扩容。
+     * 如果容量大于 MIN_TREEIFY_CAPACITY ，则会进行树化改造。
      * 在给定的散列中，替换bin中的所有链接节点，除非表太小，在这种情况下，可以进行调整。
      */
     final void treeifyBin(Node<K, V>[] tab, int hash) {
@@ -668,27 +539,13 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
                 hd.treeify(tab);
         }
     }
- 
-    /**
-     * Copies all of the mappings from the specified map to this map.
-     * These mappings will replace any mappings that this map had for
-     * any of the keys currently in the specified map.
-     *
-     * @param m mappings to be stored in this map
-     * @throws NullPointerException if the specified map is null
-     */
+
     public void putAll(Map<? extends K, ? extends V> m) {
         putMapEntries(m, true);
     }
- 
+
     /**
-     * Removes the mapping for the specified key from this map if present.
-     *
-     * @param key key whose mapping is to be removed from the map
-     * @return the previous value associated with <tt>key</tt>, or
-     * <tt>null</tt> if there was no mapping for <tt>key</tt>.
-     * (A <tt>null</tt> return can also indicate that the map
-     * previously associated <tt>null</tt> with <tt>key</tt>.)
+     * 删除节点
      */
     public V remove(Object key) {
         Node<K, V> e;
@@ -697,14 +554,7 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Implements Map.remove and related methods
-     *给定key的hash值，key值，value值，
-     * @param hash       hash for key
-     * @param key        the key
-     * @param value      the value to match if matchValue, else ignored
-     * @param matchValue if true only remove if value is equal  如果为真，只有value和给定的相等才会被删除
-     * @param movable    if false do not move other nodes while removing，如果为false，不能移动其他node，当正在删除的时候
-     * @return the node, or null if none
+     * 给定key的hash值，key值，value值，
      */
     final Node<K, V> removeNode(int hash, Object key, Object value,
                                 boolean matchValue, boolean movable) {
@@ -752,8 +602,6 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Removes all of the mappings from this map.
-     * The map will be empty after this call returns.
      * 删除所有元素
      */
     public void clear() {
@@ -767,12 +615,7 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Returns <tt>true</tt> if this map maps one or more keys to the
-     * specified value.
      * 是否包含这个vlaue
-     * @param value value whose presence in this map is to be tested
-     * @return <tt>true</tt> if this map maps one or more keys to the
-     * specified value
      */
     public boolean containsValue(Object value) {
         Node<K, V>[] tab;
@@ -790,22 +633,11 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Returns a {@link Set} view of the keys contained in this map.
-     * The set is backed by the map, so changes to the map are
-     * reflected in the set, and vice-versa.  If the map is modified
-     * while an iteration over the set is in progress (except through
-     * the iterator's own <tt>remove</tt> operation), the results of
-     * the iteration are undefined.  The set supports element removal,
-     * which removes the corresponding mapping from the map, via the
-     * <tt>Iterator.remove</tt>, <tt>Set.remove</tt>,
-     * <tt>removeAll</tt>, <tt>retainAll</tt>, and <tt>clear</tt>
-     * operations.  It does not support the <tt>add</tt> or <tt>addAll</tt>
-     * operations.
-     *返回key的set集合视图，对Map的修改，直接影响这个set集合。
-     * 如果映射被修改，而在集合上的迭代正在进行中（除了迭代器自己的“移除”操作），迭代的结果是未定义的(会报错java.util.ConcurrentModificationException，fast-fail)。
+     * 返回key的set集合视图，对Map的修改，直接影响这个set集合。
+     * 如果映射被修改，而在集合上的迭代正在进行中（除了迭代器自己的“移除”操作）
+     * 迭代的结果是未定义的(会报错java.util.ConcurrentModificationException，fast-fail)。
      * set支持元素删除，对set的删除操作，直接影响map集合。它通过迭代器从map中删除对应的映射。
      * 但不支持add和addAll操作
-     * @return a set view of the keys contained in this map
      */
     public Set<K> keySet() {
         Set<K> ks = keySet;
@@ -861,23 +693,10 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Returns a {@link Collection} view of the values contained in this map.
-     * The collection is backed by the map, so changes to the map are
-     * reflected in the collection, and vice-versa.  If the map is
-     * modified while an iteration over the collection is in progress
-     * (except through the iterator's own <tt>remove</tt> operation),
-     * the results of the iteration are undefined.  The collection
-     * supports element removal, which removes the corresponding
-     * mapping from the map, via the <tt>Iterator.remove</tt>,
-     * <tt>Collection.remove</tt>, <tt>removeAll</tt>,
-     * <tt>retainAll</tt> and <tt>clear</tt> operations.  It does not
-     * support the <tt>add</tt> or <tt>addAll</tt> operations.
-     *返回value的collection视图，修改会直接影响HashMap。
-     * 如果映射被修改，而在集合上的迭代正在进行中（除了迭代器自己的“移除”操作），迭代的结果是未定义的。
-     * (会报错java.util.ConcurrentModificationException，fast-fail),同keySet.
+     * 返回value的collection视图，修改会直接影响HashMap。
+     * 如果映射被修改，而在集合上的迭代正在进行中（除了迭代器自己的“移除”操作）
+     * 迭代的结果是未定义的。(会报错java.util.ConcurrentModificationException，fast-fail),同keySet.
      * 支持元素删除，直接影响map集合。
-     * 不支持add和addAll
-     * @return a view of the values contained in this map
      */
     public Collection<V> values() {
         Collection<V> vs = values;
@@ -926,21 +745,8 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Returns a {@link Set} view of the mappings contained in this map.
-     * The set is backed by the map, so changes to the map are
-     * reflected in the set, and vice-versa.  If the map is modified
-     * while an iteration over the set is in progress (except through
-     * the iterator's own <tt>remove</tt> operation, or through the
-     * <tt>setValue</tt> operation on a map entry returned by the
-     * iterator) the results of the iteration are undefined.  The set
-     * supports element removal, which removes the corresponding
-     * mapping from the map, via the <tt>Iterator.remove</tt>,
-     * <tt>Set.remove</tt>, <tt>removeAll</tt>, <tt>retainAll</tt> and
-     * <tt>clear</tt> operations.  It does not support the
-     * <tt>add</tt> or <tt>addAll</tt> operations.
-     *返回k-v视图，修改直接影响HashMap，fast-fail
+     * 返回k-v视图，修改直接影响HashMap，fast-fail
      * 支持删除，不支持增加
-     * @return a set view of the mappings contained in this map
      */
     public Set<Map.Entry<K, V>> entrySet() {
         Set<Map.Entry<K, V>> es;
@@ -1303,13 +1109,8 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Save the state of the <tt>HashMap</tt> instance to a stream (i.e.,
-     * serialize it).
-     *
-     * @serialData The <i>capacity</i> of the HashMap (the length of the bucket array) is emitted (int), followed by the <i>size</i> (an int, the number of key-value mappings), followed by the key (Object) and value (Object) for each key-value mapping.
-    HashMap的容量（桶数组的长度）被发出（int），然后是大小（一个int，键值映射的数量），然后是每个键值映射的键（Object）和value（Object）。
-    The key-value mappings are emitted in no particular order.
-    键值映射不是按特定顺序发出的。
+     * HashMap的容量（桶数组的长度）被发出（int），然后是大小（一个int，键值映射的数量），然后是每个键值映射的键（Object）和value（Object）。
+     * 键值映射不是按特定顺序发出的。
      */
     private void writeObject(java.io.ObjectOutputStream s)
             throws IOException {
@@ -1322,8 +1123,6 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     }
  
     /**
-     * Reconstitute the {@code HashMap} instance from a stream (i.e.,
-     * deserialize it).
      * 从一个流中重新构建@code HashMap实例（例如，反序列化)。
      */
     private void readObject(java.io.ObjectInputStream s)
@@ -1373,7 +1172,7 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
  
     /* ------------------------------------------------------------ */
     // iterators
- 
+ /*
     abstract class HashIterator {
         Node<K, V> next;        // next entry to return
         Node<K, V> current;     // current entry
@@ -1443,7 +1242,6 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
         }
     }
  
-    /* ------------------------------------------------------------ */
     // spliterators
  
     static class HashMapSpliterator<K, V> {
@@ -1692,7 +1490,7 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
             return (fence < 0 || est == map.size ? Spliterator.SIZED : 0) |
                     Spliterator.DISTINCT;
         }
-    }
+    }*/
  
     /* ------------------------------------------------------------ */
     // LinkedHashMap support
@@ -1705,7 +1503,7 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
      * but are declared final, so can be used by LinkedHashMap, view
      * classes, and HashSet.
      */
- 
+ /*
     // Create a regular (non-tree) node
     Node<K, V> newNode(int hash, K key, V value, Node<K, V> next) {
         return new Node<>(hash, key, value, next);
@@ -1725,10 +1523,7 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
     TreeNode<K, V> replacementTreeNode(Node<K, V> p, Node<K, V> next) {
         return new TreeNode<>(p.hash, p.key, p.value, next);
     }
- 
-    /**
-     * Reset to initial default state.  Called by clone and readObject.
-     */
+
     void reinitialize() {
         table = null;
         entrySet = null;
@@ -1761,17 +1556,12 @@ HashMap 底层是基于散列算法实现，散列算法分为散列再探测和
             }
         }
     }
- 
+ */
     /* ------------------------------------------------------------ */
     // Tree bins
  
     /**
-     * Entry for Tree bins.
-     条目树箱。
-     Extends LinkedHashMap.
-     LinkedHashMap延伸。
-     Entry (which in turn extends Node) so can be used as extension of either regular or linked node.
-     条目（反过来扩展节点），因此可以用作常规或链接节点的扩展。
+     * 条目树箱
      */
     static final class TreeNode<K, V> extends LinkedHashMap.Entry<K, V> {
         TreeNode<K, V> parent;  // red-black tree links
